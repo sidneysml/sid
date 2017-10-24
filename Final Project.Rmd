@@ -1,0 +1,93 @@
+---
+title: "Stats 101C Final Project"
+author: "Sidney Lee (104566230)"
+date: "6/6/2017"
+output: html_document
+---
+
+```{r}
+la <- read.csv("~/Desktop/Data/lafdtraining.csv")
+test <- read.csv("~/Desktop/Data/testing.without.response.csv")
+set.seed(1)
+subset <- sample(nrow(la), nrow(la)*0.5, replace=F)
+train <- la[subset, ]
+
+# check for NAs
+sum(is.na(train$elapsed_time))/nrow(train) # approx 16% of the data is NA
+train <- train[!is.na(train$elapsed_time),] # rows with elapsed_time as NA are omitted for new dataset
+# look at response variable
+plot(train$elapsed_time)
+plot(log(train$elapsed_time))
+plot(log(elapsed_time)~as.factor(year), data=train)
+plot(log(elapsed_time)~First.in.District, data=train)
+# clean data
+str(train)
+train$First.in.District <- as.numeric(train$First.in.District)
+train$Dispatch.Sequence <- as.numeric(train$Dispatch.Sequence)
+str(test)
+test$First.in.District <- as.numeric(test$First.in.District)
+test$Dispatch.Sequence <- as.numeric(test$Dispatch.Sequence)
+
+# keep: First.in.District, Dispatch.Sequence, Dispatch.Status, Unit.Type, PPE.Level
+train.1 <-train[, c(4,6,7,8,9,11)]
+test.1 <- test[, c(4,6,7,8,9)]
+str(train.1)
+str(test.1)
+
+library(gbm)
+gbm.1 <- gbm(elapsed_time~., data=train.1, distribution = "gaussian", n.trees = 5000, interaction.depth = 2)
+summary(gbm.1)
+pred <- predict(gbm.1, test.1, n.trees = 5000)
+save1 <- data.frame(test$row.id, pred)
+colnames(save1) <- c("row.id", "prediction")
+write.csv(save1, file="~/Desktop/save1.csv", row.names = F) # Kaggle: 1412262.87618
+
+```
+
+```{r}
+# use whole data
+
+# check for NAs
+sum(is.na(la$elapsed_time))/nrow(la) # approx 16% of the data is NA
+train.2 <- la[!is.na(la$elapsed_time),] # rows with elapsed_time as NA are omitted for new dataset
+# clean data
+str(train.2)
+train.2$First.in.District <- as.numeric(train.2$First.in.District)
+train.2$Dispatch.Sequence <- as.numeric(train.2$Dispatch.Sequence)
+str(test)
+test$First.in.District <- as.numeric(test$First.in.District)
+test$Dispatch.Sequence <- as.numeric(test$Dispatch.Sequence)
+
+# keep: First.in.District, Dispatch.Sequence, Dispatch.Status, Unit.Type
+train.2 <-train.2[, c(4,6,7,8,9,11)]
+str(train.2)
+str(test.1)
+
+library(gbm)
+gbm.2 <- gbm(elapsed_time~., data=train.2, distribution = "gaussian", n.trees = 5000, interaction.depth = 2)
+summary(gbm.2)
+pred.2 <- predict(gbm.2, test.1, n.trees = 5000)
+save2 <- data.frame(test$row.id, pred.2)
+colnames(save2) <- c("row.id", "prediction")
+write.csv(save2, file="~/Desktop/save2.csv", row.names = F) # Kaggle: 1417707.10412
+```
+
+```{r}
+# keep: First.in.District, Dispatch.Sequence, Dispatch.Status, Unit.Type
+train.3 <- train.2[, -5]
+str(train.3)
+test.2 <- test.1[, -5]
+
+library(gbm)
+gbm.3 <- gbm(elapsed_time~., data=train.3, distribution = "gaussian", n.trees = 5000, interaction.depth = 2)
+summary(gbm.3)
+pred.3 <- predict(gbm.3, test.2, n.trees = 5000)
+save3 <- data.frame(test$row.id, pred.3)
+colnames(save3) <- c("row.id", "prediction")
+write.csv(save3, file="~/Desktop/save3.csv", row.names = F) # Kaggle: 1417804.03468
+
+```
+
+
+
+
